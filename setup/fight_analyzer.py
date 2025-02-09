@@ -9,8 +9,9 @@ class FightAnalyzer:
     def __init__(self, model_path: str = None):
         self.model = YOLO(model_path) if model_path else None
         self.metric = GameMetrics()
+        
 
-    def analyze_video(self, video_path: str, scale: float = 0.75) -> None:
+    def analyze_video(self, video_path: str) -> None:
         """Analyze video using YOLO model."""
         if not self.model:
             raise ValueError(

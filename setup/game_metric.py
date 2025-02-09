@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Tuple
 import cv2
 
+
 @dataclass
 class BoundingBox:
     x1: int
@@ -30,6 +31,7 @@ class PlayerMetrics:
     frame_advantage: BoundingBox
     status: BoundingBox
     distance: BoundingBox
+    combo: BoundingBox
 
 
 class GameMetrics:
@@ -54,6 +56,7 @@ class GameMetrics:
             "frame_advantage": (0, 0, 128),  # Dark blue
             "status": (128, 128, 0),  # Olive
             "distance": (128, 0, 128),  # Purple
+            "combo": (0, 128, 255),
         }
 
     def update_notation_location(self, notation_location: int, player: int = 1) -> None:
@@ -77,6 +80,7 @@ class GameMetrics:
             frame_advantage=BoundingBox(465, 601, 383, 619),
             status=BoundingBox(465, 623, 383, 641),
             distance=BoundingBox(465, 643, 423, 661),
+            combo=BoundingBox(170, 354, 330, 426),
         )
 
     def _create_player2_metrics(self) -> PlayerMetrics:
@@ -94,6 +98,7 @@ class GameMetrics:
             frame_advantage=BoundingBox(1105, 601, 1023, 619),
             status=BoundingBox(1105, 623, 1023, 641),
             distance=BoundingBox(1105, 643, 1063, 661),
+            combo=BoundingBox(1122, 425, 962, 351),
         )
 
     def draw_bounding_boxes(self, frame: cv2.Mat) -> cv2.Mat:
@@ -124,3 +129,43 @@ class GameMetrics:
                     1,
                 )  # Thickness
         return visualized_frame
+    
+    def check_bounding_boxes(self, path: str) -> None:
+        """Checking Game Metrics bounding box to the selected image"""
+        image = cv2.imread(path)
+        image = cv2.resize(image, (1280, 720))
+        image = self.draw_bounding_boxes(image)
+        cv2.imshow("Game metrics bounding box", image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    def get_cord_img(self, path: str) -> None:
+        """Getting coordinate of location which the user clicks"""
+        image = cv2.imread(path)
+
+        def click_event(event, x, y, flags, param):
+            if event == cv2.EVENT_LBUTTONDOWN:
+                print(f"Koordinat: ({x}, {y})")
+                cv2.circle(image, (x, y), 5, (0, 255, 0), -1)
+                cv2.imshow("Image", image)
+
+        image = cv2.resize(image, (1280, 720))
+        cv2.imshow("Image", image)
+        cv2.setMouseCallback("Image", click_event)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+
+def main():
+    try:
+        metric = GameMetrics()
+        path_image = "./datasets/fight_replay/sample3/tes3_frame_0505.jpg"
+        # metric.get_cord_img(path_image)
+        metric.check_bounding_boxes(path_image)
+
+    except Exception as e:
+        print(f"Execution error: {e}")
+
+
+if __name__ == "__main__":
+    main()
