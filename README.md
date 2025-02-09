@@ -13,14 +13,14 @@
 - 🎥 **Replay Analysis** – Processes replay footage frame by frame for precise data logging.
 
 ## How It Works
-1. **Detect Inputs:** Uses YOLOv8 to analyze player inputs directly from the replay footage.
+1. **Detect Inputs:** Uses YOLOv11 to analyze player inputs directly from the replay footage.
 2. **Extract Frame Data:** Leverages OCR and detection models to extract relevant frame and game status information.
 3. **Analyze Interactions:** Identifies punishes, sidesteps, and frame advantages to provide actionable insights.
 4. **Generate Data:** Compiles extracted data into structured tables for further analysis.
 
 ## Requirements
 - Python 3.8+
-- Ultralytics YOLOv8
+- Ultralytics YOLOv11
 - OpenCV
 - Tesseract OCR
 - NumPy & Pandas
