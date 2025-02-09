@@ -28,7 +28,7 @@
 ## Notes
 🔹 This project is **actively in development**, meaning features may change or improve over time.  
 🔹 Contributions and feedback are welcome, but the tool is currently tailored for **personal research and training purposes**.  
-🔹 Model training and dataset augmentation are being optimized to improve detection accuracy.  
+🔹 Model training and dataset augmentation are being optimized to improve detection accuracy (you can see the Notation Reader Model [here](https://universe.roboflow.com/dmrs-a31br/tekken-notation-reader)).  
 
 ---
 
