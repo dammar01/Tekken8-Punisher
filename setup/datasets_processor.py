@@ -8,6 +8,17 @@ class VideoProcessor:
     """Handles video processing operations."""
 
     @staticmethod
+    def exctract_bbox_text(
+        video_path: str,
+        prefix: str,
+        output_dir: str,
+        interval_sec: int,
+        num_images: int,
+    ) -> None:
+        """Extract bounding box text from video at specified intervals."""
+        # not yet created..
+
+    @staticmethod
     def extract_frames(
         video_path: str,
         prefix: str,
@@ -108,7 +119,7 @@ def main():
         for dataset_type in ["train", "valid", "test"]:
             image_augment.process_dataset(f"datasets/notation_detection/{dataset_type}")
         extractor.extract_frames(
-            video_path="datasets/fight_replay/sample.mp4",
+            video_path="datasets/fight_replay/combo1.mp4",
             prefix="test",
             output_dir="datasets/fight_replay/sample",
             interval_sec=1,

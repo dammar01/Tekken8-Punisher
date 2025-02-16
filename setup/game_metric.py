@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple
 import cv2
+from paddleocr import PaddleOCR
 
 
 @dataclass
@@ -32,6 +33,8 @@ class PlayerMetrics:
     status: BoundingBox
     distance: BoundingBox
     combo: BoundingBox
+    timestamp: BoundingBox
+    health: BoundingBox
 
 
 class GameMetrics:
@@ -57,7 +60,10 @@ class GameMetrics:
             "status": (128, 128, 0),  # Olive
             "distance": (128, 0, 128),  # Purple
             "combo": (0, 128, 255),
+            "timestamp": (128, 128, 128),
+            "health": (128, 0, 0),
         }
+        self.reader = PaddleOCR(use_angle_cls=False, lang='en', rec_char_type="en", drop_score=0)
 
     def update_notation_location(self, notation_location: int, player: int = 1) -> None:
         if player == 1:
@@ -69,36 +75,40 @@ class GameMetrics:
         """Creates PlayerMetrics instance for player 1 with predefined coordinates."""
         input_frame_y = round(157 + (22.75 * self.notation_location_p1))
         return PlayerMetrics(
-            input_frame=BoundingBox(155, input_frame_y, 135, input_frame_y + 18),
-            total_damage=BoundingBox(465, 442, 433, 460),
-            max_combo_damage=BoundingBox(465, 462, 433, 480),
-            hit_properties=BoundingBox(465, 482, 403, 502),
-            damage=BoundingBox(465, 505, 403, 523),
-            recoverable_damage=BoundingBox(465, 527, 403, 545),
+            input_frame=BoundingBox(135, input_frame_y, 155, input_frame_y + 18),
+            total_damage=BoundingBox(433, 442, 465, 460),
+            max_combo_damage=BoundingBox(433, 462, 465, 480),
+            hit_properties=BoundingBox(403, 482, 465, 502),
+            damage=BoundingBox(403, 505, 465, 523),
+            recoverable_damage=BoundingBox(403, 527, 465, 545),
             event=BoundingBox(178, 548, 326, 566),
-            attack_startup_frames=BoundingBox(465, 579, 383, 597),
-            frame_advantage=BoundingBox(465, 601, 383, 619),
-            status=BoundingBox(465, 623, 383, 641),
-            distance=BoundingBox(465, 643, 423, 661),
+            attack_startup_frames=BoundingBox(383, 579, 465, 597),
+            frame_advantage=BoundingBox(383, 601, 465, 619),
+            status=BoundingBox(383, 623, 465, 641),
+            distance=BoundingBox(423, 643, 465, 661),
             combo=BoundingBox(170, 354, 330, 426),
+            timestamp=BoundingBox(594, 20, 686, 90),
+            health=BoundingBox(390, 28, 443, 46),
         )
 
     def _create_player2_metrics(self) -> PlayerMetrics:
         """Creates PlayerMetrics instance for player 2 with predefined coordinates."""
         input_frame_y = round(157 + (22.75 * self.notation_location_p2))
         return PlayerMetrics(
-            input_frame=BoundingBox(1247, input_frame_y, 1227, input_frame_y + 18),
-            total_damage=BoundingBox(1105, 442, 1073, 460),
-            max_combo_damage=BoundingBox(1105, 462, 1073, 480),
-            hit_properties=BoundingBox(1105, 482, 1043, 502),
-            damage=BoundingBox(1105, 505, 1043, 523),
-            recoverable_damage=BoundingBox(1105, 527, 1043, 545),
+            input_frame=BoundingBox(1227, input_frame_y, 1247, input_frame_y + 18),
+            total_damage=BoundingBox(1073, 442, 1105, 460),
+            max_combo_damage=BoundingBox(1073, 462, 1105, 480),
+            hit_properties=BoundingBox(1043, 482, 1105, 502),
+            damage=BoundingBox(1043, 505, 1105, 523),
+            recoverable_damage=BoundingBox(1043, 527, 1105, 545),
             event=BoundingBox(818, 548, 966, 566),
-            attack_startup_frames=BoundingBox(1105, 579, 1023, 597),
-            frame_advantage=BoundingBox(1105, 601, 1023, 619),
-            status=BoundingBox(1105, 623, 1023, 641),
-            distance=BoundingBox(1105, 643, 1063, 661),
-            combo=BoundingBox(1122, 425, 962, 351),
+            attack_startup_frames=BoundingBox(1023, 579, 1105, 597),
+            frame_advantage=BoundingBox(1023, 601, 1105, 619),
+            status=BoundingBox(1023, 623, 1105, 641),
+            distance=BoundingBox(1063, 643, 1105, 661),
+            combo=BoundingBox(962, 351, 1122, 425),
+            timestamp=BoundingBox(594, 20, 686, 90),
+            health=BoundingBox(878, 28, 931, 46),
         )
 
     def draw_bounding_boxes(self, frame: cv2.Mat) -> cv2.Mat:
@@ -129,7 +139,7 @@ class GameMetrics:
                     1,
                 )  # Thickness
         return visualized_frame
-    
+
     def check_bounding_boxes(self, path: str) -> None:
         """Checking Game Metrics bounding box to the selected image"""
         image = cv2.imread(path)
@@ -155,16 +165,70 @@ class GameMetrics:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+    def preprocess_image(self, image):
+        """Convert image to grayscale and apply adaptive threshold"""
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (3, 3), 0) 
+        _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        return thresh
+    
+    def extract_text(self, image):
+        """Run OCR and extract text from the image"""
+        results = self.reader.ocr(image, cls=False)
+        extracted_text = []
+        for line in results[0]:  
+            print(line, "\n")
+            for word_info in line:
+                extracted_text.append(word_info[1][0])
+        return ' '.join(extracted_text)
+
+    def extract_data(self, path: str) -> dict:
+        """Extract OCR data from player metrics"""
+        image = cv2.imread(path)
+        if image is None:
+            raise ValueError(f"Failed to load image: {path}")
+        image = cv2.resize(image, (1280, 720))
+        result = {}
+
+        def process_player_fields(player_obj, prefix: str) -> None:
+            """Process all fields for a given player"""
+            for field in player_obj.__dataclass_fields__:
+                try:
+                    # Crop image
+                    bbox: BoundingBox = getattr(player_obj, field)
+                    x1, x2 = sorted([bbox.x1, bbox.x2])  # Ensure correct order
+                    y1, y2 = sorted([bbox.y1, bbox.y2])
+
+                    cropped_image = image[y1:y2, x1:x2]
+
+                    # Validate crop size
+                    if cropped_image.size == 0:
+                        raise ValueError("Invalid crop size")
+                    
+                    processed_img = self.preprocess_image(cropped_image)
+                    # cv2.imshow("Game metrics bounding box", cropped_image)
+                    # cv2.waitKey(0)
+                    # cv2.destroyAllWindows()
+                    
+                    # Extract text
+                    extracted_text = self.extract_text(cropped_image)
+                    result[f"{prefix}_{field}"] = extracted_text.strip()
+
+                except Exception as e:
+                    print(f"Error processing {prefix}_{field}: {str(e)}")
+                    result[f"{prefix}_{field}"] = ""
+        # Process both players
+        process_player_fields(self.player1, "player1")
+        process_player_fields(self.player2, "player2")
+        return result
+
 
 def main():
-    try:
-        metric = GameMetrics()
-        path_image = "./datasets/fight_replay/sample3/tes3_frame_0505.jpg"
-        # metric.get_cord_img(path_image)
-        metric.check_bounding_boxes(path_image)
-
-    except Exception as e:
-        print(f"Execution error: {e}")
+    metric = GameMetrics()
+    path_image = "./datasets/fight_replay/sample/test_frame_0505.jpg"
+    # metric.get_cord_img(path_image)
+    metric.check_bounding_boxes(path_image)
+    # print(metric.extract_data(path_image))
 
 
 if __name__ == "__main__":
