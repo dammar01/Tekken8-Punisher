@@ -56,7 +56,7 @@ class FightAnalyzer:
 def main():
     try:
         analyzer = FightAnalyzer("./datasets/runs/detect/train2/weights/best.pt")
-        analyzer.analyze_video("./datasets/fight_replay/tes3.mp4")
+        analyzer.analyze_video("./datasets/fight_replay/combo1.mp4")
 
     except Exception as e:
         print(f"Execution error: {e}")

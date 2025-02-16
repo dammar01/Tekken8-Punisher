@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple
 import cv2
-from paddleocr import PaddleOCR
+# from paddleocr import PaddleOCR
 
 
 @dataclass
@@ -63,7 +63,7 @@ class GameMetrics:
             "timestamp": (128, 128, 128),
             "health": (128, 0, 0),
         }
-        self.reader = PaddleOCR(use_angle_cls=False, lang='en', rec_char_type="en", drop_score=0)
+        # self.reader = PaddleOCR(use_angle_cls=False, lang='en', rec_char_type="en", drop_score=0)
 
     def update_notation_location(self, notation_location: int, player: int = 1) -> None:
         if player == 1:
