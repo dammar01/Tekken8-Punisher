@@ -1,22 +1,12 @@
 from pathlib import Path
 from typing import Dict
+from game_metric import GameMetrics
 import albumentations as A
 import cv2
 
 
 class VideoProcessor:
     """Handles video processing operations."""
-
-    @staticmethod
-    def exctract_bbox_text(
-        video_path: str,
-        prefix: str,
-        output_dir: str,
-        interval_sec: int,
-        num_images: int,
-    ) -> None:
-        """Extract bounding box text from video at specified intervals."""
-        # not yet created..
 
     @staticmethod
     def extract_frames(
@@ -54,10 +44,66 @@ class VideoProcessor:
                 cv2.imwrite(str(frame_path), frame)
                 print(f"Saved frame: {frame_path}")
                 extracted_count += 1
-
             current_frame += 1
         video.release()
         print("Extraction complete.")
+
+    @staticmethod
+    def extract_bbox_frame(
+        video_path: str,
+        prefix: str,
+        output_dir: str,
+        interval_sec: int,
+        num_images: int,
+    ):
+        """Extract bounding boxes from video at specified intervals."""
+        game_metrics = GameMetrics()
+        video = cv2.VideoCapture(video_path)
+
+        if not video.isOpened():
+            print(f"Error: Unable to open video {video_path}")
+            return
+
+        fps = int(video.get(cv2.CAP_PROP_FPS))
+        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration = total_frames / fps
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        frame_positions = set()
+        for start_time in range(0, int(duration), interval_sec):
+            for i in range(num_images):
+                frame_positions.add(
+                    int((start_time + (i / num_images) * interval_sec) * fps)
+                )
+        extracted_count = 0
+        current_frame = 0
+        while True:
+            ret, frame = video.read()
+            if not ret:
+                break
+            if current_frame in frame_positions:
+                frame = cv2.resize(frame, (1280, 720))
+                for player, player_name in [
+                    (game_metrics.player1, "player1"),
+                    (game_metrics.player2, "player2"),
+                ]:
+                    for attr_name, bbox in player.__dict__.items():
+                        x1, y1, x2, y2 = bbox.to_tuple()
+                        cropped_frame = frame[y1:y2, x1:x2]
+                        if cropped_frame.size == 0:
+                            continue
+                        attr_folder = output_dir / attr_name
+                        attr_folder.mkdir(parents=True, exist_ok=True)
+                        frame_path = (
+                            attr_folder / f"{prefix}_{player_name}_frame_{extracted_count:04d}.jpg"
+                        )
+                        cv2.imwrite(str(frame_path), cropped_frame)
+                        print(f"Saved frame: {frame_path}")
+                extracted_count += 1
+            current_frame += 1
+        video.release()
+        print("Extraction completed successfully.")
 
 
 class ImageAugmenter:
@@ -113,18 +159,25 @@ class ImageAugmenter:
 
 def main():
     try:
-        image_augment = ImageAugmenter()
         extractor = VideoProcessor()
-
-        for dataset_type in ["train", "valid", "test"]:
-            image_augment.process_dataset(f"datasets/notation_detection/{dataset_type}")
-        extractor.extract_frames(
-            video_path="datasets/fight_replay/combo1.mp4",
-            prefix="test",
+        # extractor.extract_frames(
+        #     video_path="datasets/fight_replay/tes.mp4",
+        #     prefix="test",
+        #     output_dir="datasets/fight_replay/sample",
+        #     interval_sec=1,
+        #     num_images=60,
+        # )
+        extractor.extract_bbox_frame(
+            video_path="datasets/fight_replay/combo3.mp4",
+            prefix="combo3",
             output_dir="datasets/fight_replay/sample",
             interval_sec=1,
-            num_images=60,
+            num_images=1,
         )
+
+        # image_augment = ImageAugmenter()
+        # for dataset_type in ["train", "valid", "test"]:
+        #     image_augment.process_dataset(f"datasets/notation_detection/{dataset_type}")
     except Exception as e:
         print(f"Execution error: {e}")
 

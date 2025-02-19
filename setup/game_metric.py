@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple
 import cv2
+
 # from paddleocr import PaddleOCR
 
 
@@ -32,7 +33,8 @@ class PlayerMetrics:
     frame_advantage: BoundingBox
     status: BoundingBox
     distance: BoundingBox
-    combo: BoundingBox
+    hit_combo: BoundingBox
+    damage_combo: BoundingBox
     timestamp: BoundingBox
     health: BoundingBox
 
@@ -59,7 +61,8 @@ class GameMetrics:
             "frame_advantage": (0, 0, 128),  # Dark blue
             "status": (128, 128, 0),  # Olive
             "distance": (128, 0, 128),  # Purple
-            "combo": (0, 128, 255),
+            "hit_combo": (0, 128, 255),
+            "damage_combo": (0, 128, 255),
             "timestamp": (128, 128, 128),
             "health": (128, 0, 0),
         }
@@ -86,7 +89,8 @@ class GameMetrics:
             frame_advantage=BoundingBox(383, 601, 465, 619),
             status=BoundingBox(383, 623, 465, 641),
             distance=BoundingBox(423, 643, 465, 661),
-            combo=BoundingBox(170, 354, 330, 426),
+            hit_combo=BoundingBox(170, 354, 330, 426),
+            damage_combo=BoundingBox(170, 354, 330, 426),
             timestamp=BoundingBox(594, 20, 686, 90),
             health=BoundingBox(390, 28, 443, 46),
         )
@@ -106,7 +110,8 @@ class GameMetrics:
             frame_advantage=BoundingBox(1023, 601, 1105, 619),
             status=BoundingBox(1023, 623, 1105, 641),
             distance=BoundingBox(1063, 643, 1105, 661),
-            combo=BoundingBox(962, 351, 1122, 425),
+            hit_combo=BoundingBox(962, 351, 1122, 425),
+            damage_combo=BoundingBox(962, 351, 1122, 425),
             timestamp=BoundingBox(594, 20, 686, 90),
             health=BoundingBox(878, 28, 931, 46),
         )
@@ -165,70 +170,12 @@ class GameMetrics:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def preprocess_image(self, image):
-        """Convert image to grayscale and apply adaptive threshold"""
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (3, 3), 0) 
-        _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        return thresh
-    
-    def extract_text(self, image):
-        """Run OCR and extract text from the image"""
-        results = self.reader.ocr(image, cls=False)
-        extracted_text = []
-        for line in results[0]:  
-            print(line, "\n")
-            for word_info in line:
-                extracted_text.append(word_info[1][0])
-        return ' '.join(extracted_text)
-
-    def extract_data(self, path: str) -> dict:
-        """Extract OCR data from player metrics"""
-        image = cv2.imread(path)
-        if image is None:
-            raise ValueError(f"Failed to load image: {path}")
-        image = cv2.resize(image, (1280, 720))
-        result = {}
-
-        def process_player_fields(player_obj, prefix: str) -> None:
-            """Process all fields for a given player"""
-            for field in player_obj.__dataclass_fields__:
-                try:
-                    # Crop image
-                    bbox: BoundingBox = getattr(player_obj, field)
-                    x1, x2 = sorted([bbox.x1, bbox.x2])  # Ensure correct order
-                    y1, y2 = sorted([bbox.y1, bbox.y2])
-
-                    cropped_image = image[y1:y2, x1:x2]
-
-                    # Validate crop size
-                    if cropped_image.size == 0:
-                        raise ValueError("Invalid crop size")
-                    
-                    processed_img = self.preprocess_image(cropped_image)
-                    # cv2.imshow("Game metrics bounding box", cropped_image)
-                    # cv2.waitKey(0)
-                    # cv2.destroyAllWindows()
-                    
-                    # Extract text
-                    extracted_text = self.extract_text(cropped_image)
-                    result[f"{prefix}_{field}"] = extracted_text.strip()
-
-                except Exception as e:
-                    print(f"Error processing {prefix}_{field}: {str(e)}")
-                    result[f"{prefix}_{field}"] = ""
-        # Process both players
-        process_player_fields(self.player1, "player1")
-        process_player_fields(self.player2, "player2")
-        return result
-
 
 def main():
     metric = GameMetrics()
-    path_image = "./datasets/fight_replay/sample/test_frame_0505.jpg"
+    path_image = "./datasets/fight_replay/sample/tes.png"
     # metric.get_cord_img(path_image)
     metric.check_bounding_boxes(path_image)
-    # print(metric.extract_data(path_image))
 
 
 if __name__ == "__main__":
